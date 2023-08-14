@@ -1,0 +1,113 @@
+// Import necessary dependencies and settings
+import pandas as pd
+import numpy as np
+import logging
+import re
+import pickle
+from sklearn.preprocessing import LabelEncoder
+from sklearn.feature_extraction.text import CountVectorizer,TfidfVectorizer
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, confusion_matrix, f1_score
+from sklearn.linear_model import LogisticRegression
+from xgboost import XGBClassifier
+from sklearn import svm
+from cleaning import process_text
+
+// Configure logging settings
+logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+
+// Define the function to extract features for all models
+function extract_features(field, training_data, testing_data, type) {
+    logging.info("Extracting features and creating vocabulary...")
+    
+    if "binary" in type {
+        // BINARY FEATURE REPRESENTATION
+        cv= CountVectorizer(binary=True, max_df=0.95, analyzer=process_text)
+        cv.fit_transform(training_data.values)
+        
+        train_feature_set=cv.transform(training_data.values)
+        test_feature_set=cv.transform(testing_data.values)
+        
+        return train_feature_set,test_feature_set,cv
+    }
+    else if "counts" in type {
+        // COUNT BASED FEATURE REPRESENTATION
+        cv= CountVectorizer(binary=False, max_df=0.95, analyzer=process_text)
+        cv.fit_transform(training_data.values)
+        train_feature_set=cv.transform(training_data.values)
+        test_feature_set=cv.transform(testing_data.values)
+        
+        return train_feature_set,test_feature_set,cv
+    }
+    else {    
+        // TF-IDF BASED FEATURE REPRESENTATION
+        tfidf_vectorizer=TfidfVectorizer(use_idf=True, max_df=0.95, analyzer=process_text)
+        tfidf_vectorizer.fit_transform(training_data.values)
+        
+        train_feature_set=tfidf_vectorizer.transform(training_data.values)
+        test_feature_set=tfidf_vectorizer.transform(testing_data.values)
+        
+        return train_feature_set,test_feature_set,tfidf_vectorizer
+    }
+}
+
+// Define the function to train the model for all methods
+function train_model(classifier, train_val, field, feature_rep, name) {
+    logging.info("Starting model training...")   
+    // GET A TRAIN TEST SPLIT (set seed for consistent results)
+    training_data, testing_data = train_test_split(train_val, random_state=2000)
+    // Get features
+    X_train=training_data['statement']
+    X_test=testing_data['statement']
+    // Get labels
+    Y_train=training_data['label'].values
+    Y_test=testing_data['label'].values
+    // GET FEATURES
+    train_features,test_features,feature_transformer=extract_features(field, X_train, X_test, type=feature_rep)
+    logging.info("Training a Classification Model...")
+    model=classifier.fit(train_features,Y_train)
+    // GET PREDICTIONS
+    predictions = model.predict(test_features)
+    // GET EVALUATION NUMBERS ON TEST SET
+    logging.info("Starting evaluation...")
+    score = f1_score(Y_test,predictions)
+    print("The F1 score of method ",name,"with TF-IDF BASED FEATURE REPRESENTATION is:",score)
+    print(classification_report(Y_test,predictions))
+    print("Confusion Matrix of",name,"with TF-IDF BASED FEATURE REPRESENTATION is:")
+    print(confusion_matrix(Y_test,predictions))
+    logging.info("Done training and evaluation.")
+    
+    return model, feature_transformer, score
+}
+
+// Check if the code is being run as the main program
+if the current module is the main module:
+    # load the processed data
+    load the train data from "C:\\AOA_proj\\Detecting-Fake-News-On-Social-Media-main\\data\\processed\\train.csv"
+    load the validation data from "C:\\AOA_proj\\Detecting-Fake-News-On-Social-Media-main\\data\\processed\\val.csv"
+
+    # define the path for model and feature transformer
+    set the model path as "C:\\AOA_proj\\Detecting-Fake-News-On-Social-Media-main\\models\\final_model.pkl"
+    set the transformer path as "C:\\AOA_proj\\Detecting-Fake-News-On-Social-Media-main\\models\\transformer.pkl"
+
+    #Merging the training and validation data together to train the model
+    encode the label values using LabelEncoder()
+    concatenate train and validation data
+    count the label values
+    transform the label values
+
+    # Logistic Regression training model
+    set the field as "statement"
+    set the Logistic Regression model parameters
+    train the model using the train_model() function and obtain the trained model, transformer, and score.
+
+    # XGBoost training model
+    set the field as "statement"
+    set the XGBoost model parameters
+    train the model using the train_model() function and obtain the trained model, transformer, and score.
+
+    # SVM training model
+    set the field as "statement"
+    set the SVM model parameters
+    train the model using the train_model() function and obtain the trained model, transformer, and score.
+

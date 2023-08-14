@@ -1,0 +1,36 @@
+import seaborn as sn  # Import the seaborn library for data visualization
+import re  # Import the re library for regular expressions
+import string  # Import the string library for string operations
+import nltk  # Import the nltk library for natural language processing
+from nltk.corpus import stopwords  # Import the stopwords module from nltk corpus
+from nltk.stem import WordNetLemmatizer  # Import the WordNetLemmatizer module from nltk stemmer
+nltk.download('wordnet')  # Download the WordNetLemmatizer data
+
+# Define a function to create a countplot of the label column in a given DataFrame
+def create_distribution(dataFile):
+    return sn.countplot(x='label', data=dataFile, palette='hls')
+
+# Define a function to process a given text by removing non-alphabetic characters, punctuation, stopwords and lemmatizing the words
+def process_text(text):
+    text = re.sub(r'[^a-zA-Z\s]', '', text, re.I|re.A)  # Remove non-alphabetic characters
+    nopunc = [char for char in text if char not in string.punctuation]  # Remove punctuation
+    nopunc = ''.join(nopunc)  # Convert list of characters back to string
+    clean_words = [word for word in nopunc.split() if word.lower() not in stopwords.words('english')]  # Remove stopwords
+    lemmatizer = WordNetLemmatizer()  # Initialize the WordNetLemmatizer object
+    lemmatized_words = [lemmatizer.lemmatize(word) for word in clean_words if (len(word) > 2 and len(word) < 14)]  # Lemmatize the words
+    return lemmatized_words
+
+# Define a function to join a list of words into a single string
+def process_text2(text):
+    text1 = " ".join(text)
+    return text1
+
+# Define a function to map the label column in the given train, test and validation datasets to true/false values based on a dictionary
+def map_lables(train, test, val):
+    labels_dict = {'true': 'true','mostly-true': 'true',
+               'half-true':'true', 'false':'false', 
+               'barely-true':'false','pants-fire':'false'}  # Define a dictionary to map labels
+    train= train.replace({"label": labels_dict})[['label','statement']]  # Replace the label column values in train dataset using the dictionary and keep only 'label' and 'statement' columns
+    test = test.replace({"label": labels_dict})[['label','statement']]  # Replace the label column values in test dataset using the dictionary and keep only 'label' and 'statement' columns
+    val = val.replace({"label": labels_dict})[['label','statement']]  # Replace the label column values in validation dataset using the dictionary and keep only 'label' and 'statement' columns
+    return train, test, val  # Return the updated train, test and validation datasets
